@@ -1,10 +1,8 @@
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import streamlit as st
-from scipy.optimize import minimize
-
+from scipy.optimize import minimize, LinearConstraint, Bounds
 trading_days = 252
+
 
 
 def readData(file_path):
@@ -19,53 +17,135 @@ def readData(file_path):
 
 
 # Function to fill NaN with average of previous two values
-def fill_nan(series):
-    series = series.copy()
-    for i in range(len(series)):
-        if pd.isna(series[i]) and i >= 2:
-            prev1 = series[i - 1]
-            prev2 = series[i - 2]
-            if pd.notna(prev1) and pd.notna(prev2):
-                series[i] = (prev1 + prev2) / 2
-    return series
+def fill_nan(column):
+    """
+        Replaces NaN values in a pandas column with the average of the previous two values (if available).
+    """
+    column = column.copy()
+    for i in range(len(column)):
+        # Checks if each item in the column is nan
+        if pd.isna(column[i]) and i >= 2:  # Assumes the first two values are not nan
+            prev1 = column[i - 1]
+            prev2 = column[i - 2]
+            if pd.notna(prev1) and pd.notna(prev2):  # Makes sure that the previous 2 values are not nan
+                column[i] = (prev1 + prev2) / 2  # Average
+    return column
 
 
 def daily_returns(data):
+    """
+      Calculates daily percentage returns for each commodity in the DataFrame.
+      """
     df = pd.DataFrame()
     # Calculating Returns
-    for i in data.head():
+    for i in data.head():  # Iterate through each column (commodity)
+        # [::-1] - Reverses the column and .pct_change() -calculates percent change
         df[i + "_return"] = data[i][::-1].pct_change()
     return df
 
 
-def compute_portfolio(portfolio_returns, risk_free_rate):
-    # Annualize stats
+def compute_portfolio(returns_df, risk_free_rate, weights):
+    weights = np.array(weights)
 
-    mean_return = portfolio_returns.mean() * trading_days
-    volatility = portfolio_returns.std() * np.sqrt(trading_days)
-    sharpe_ratio = (mean_return - risk_free_rate) / volatility if volatility != 0 else np.nan
+    # Daily mean return for each asset
+    mean_returns = returns_df.mean()
+
+    # Daily portfolio return
+    daily_portfolio_return = np.sum(mean_returns * weights)
+
+    # Annualized return
+    annual_return = daily_portfolio_return * trading_days
+
+    # Covariance matrix of daily returns
+    cov_matrix = returns_df.cov()
+
+    # Daily portfolio volatility
+    daily_volatility = np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights)))
+
+    # Annualized volatility
+    annual_volatility = daily_volatility * np.sqrt(trading_days)
+
+    # Sharpe ratio
+    sharpe_ratio = (annual_return - risk_free_rate) / annual_volatility if annual_volatility != 0 else np.nan
 
     return {
-        "annual_return": mean_return,
-        "annual_volatility": volatility,
+        "annual_return": annual_return,
+        "annual_volatility": annual_volatility,
         "sharpe_ratio": sharpe_ratio
     }
 
-# data = data.sort_index()
 
-# Calculate 30-day Rolling Volatility
-# columns = [x for x in data.columns if "return" in x]  # Daily return coloumns
-# for i in columns:
-#     data[i[:-7] + '_Volatility'] = data[i].rolling(window=30).std()
-#
-# returns = data[columns]
-# mean_daily_returns = returns.mean()
-# cov_matrix = returns.cov()
-#
-# weights = [1 / len(columns) for _ in range(len(columns))]  # Equal weights for each commodity
-#
-# portfolio = compute_portfolio(data, columns, weights)
-#
-# print("Annual Return:", round(portfolio['annual_return'] * 100, 2), "%")
-# print("Annual Volatility:", round(portfolio['annual_volatility'] * 100, 2), "%")
-# print("Sharpe Ratio:", round(portfolio['sharpe_ratio'], 2))
+
+def commodities_performance(returns_df):
+    commodity_names = []
+    sharpe_ratios = []
+    annual_returns = []
+    annual_vols = []
+    for i in list(returns_df.columns):
+        print(returns_df[i])
+        commodity = compute_portfolio(returns_df[[i]], risk_free_rate=0.0, weights=[1])
+        commodity_names.append(i.replace("_return", ""))
+        sharpe_ratios.append(commodity["sharpe_ratio"])
+        annual_returns.append(commodity["annual_return"])
+        annual_vols.append(commodity["annual_volatility"])
+
+    commodity_df = pd.DataFrame({
+        "Commodity": commodity_names,
+        "Sharpe Ratio": sharpe_ratios,
+        "Annual Return": annual_returns,
+        "Annual Volatility": annual_vols
+    })
+    return commodity_df
+
+
+def objective_function(weights, returns_df, risk_free_rate=0.0):
+    # Compute portfolio daily returns
+    portfolio_returns = (returns_df * weights).sum(axis=1)
+
+    # Annualized stats
+    mean_return = portfolio_returns.mean() * trading_days
+    volatility = portfolio_returns.std() * np.sqrt(trading_days)
+
+    sharpe = (mean_return - risk_free_rate) / volatility if volatility != 0 else np.nan
+
+    return -sharpe  # We minimize negative Sharpe
+
+
+def optimizing_weights(returns_df, risk_free_rate=0.0):
+    n_assets = len(returns_df.columns)
+
+    # Initial guess: equal weights
+    init_guess = [1.0 / n_assets] * n_assets
+
+    # Constraints: weights sum to 1
+    constraints = ({'type': 'eq', 'fun': lambda weights: np.sum(weights) - 1})
+
+    # Bounds: weights between 0 and 1
+    bounds = tuple((0, 1) for _ in range(n_assets))
+
+    # Optimization
+    result = minimize(
+        objective_function,
+        init_guess,
+        args=(returns_df, risk_free_rate),
+        method='SLSQP',
+        bounds=bounds,
+        constraints=constraints
+    )
+
+    return result.x  # Optimized weights
+
+
+def compare(commodity, portfolio):
+    # Create comparison DataFrame
+    df = pd.DataFrame({
+        "Type": ["Portfolio", commodity["Commodity"]],
+        "Annual Return": [portfolio["annual_return"], commodity["Annual Return"]],
+        "Annual Volatility": [portfolio["annual_volatility"], commodity["Annual Volatility"]],
+        "Sharpe Ratio": [portfolio["sharpe_ratio"], commodity["Sharpe Ratio"]],
+    })
+
+    # Set index for plotting
+    df.set_index("Type", inplace=True)
+
+    return df

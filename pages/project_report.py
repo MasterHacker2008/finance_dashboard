@@ -8,6 +8,12 @@ st.title("Project Report")
 st.markdown("---")
 st.markdown("## 📘 Project Write-up")
 
+st.download_button(
+    label="Download CSV",
+    file_name="commodities_data.csv",
+    mime="text/csv",
+    data="./commodities_data.csv"
+)
 st.markdown("""
 ### 🎯 Project Title
 **Commodity Portfolio Analysis: Testing the Impact of Diversification on Volatility and Risk-Adjusted Returns**
