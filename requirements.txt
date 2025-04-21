@@ -1,5 +1,7 @@
-streamlit
-pandas
-numpy
-matplotlib
-scipy
+streamlit~=1.44.0
+pandas~=2.2.3
+numpy~=2.1.2
+matplotlib~=3.10.1
+scipy~=1.15.2
+
+altair~=5.5.0

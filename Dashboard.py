@@ -1,9 +1,10 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 from portfolio_utils import fill_nan, readData, daily_returns, compute_portfolio, commodities_performance, compare, \
     optimizing_weights
+
+import altair as alt
 
 st.set_page_config(page_title="Dashboard", layout="wide")
 st.title("Dashboard")
@@ -19,7 +20,7 @@ start_year, end_year = st.slider(
     "Select year range",
     min_value=int(data.index.year.min()),
     max_value=int(data.index.year.max()),
-    value=(2010, 2020),
+    value=(2010, 2024),
     step=1
 )
 
@@ -49,20 +50,30 @@ st.subheader("Annual Returns of Selected Commodities")
 st.write("")
 st.line_chart(annual_returns)
 
+risk_free_rate = st.number_input(
+    label="Enter the Risk-Free Rate (%)",
+    min_value=0.0,
+    max_value=100.0,
+    value=0.0,      # Default value, e.g., 2%
+    step=0.5,
+    format="%.2f"
+) / 100  # Convert from % to decimal for calculations
+
 returns_df = daily_returns(filtered_data)
-df = commodities_performance(returns_df)
-top_commodity = df.sort_values(by="Sharpe Ratio", ascending=False).iloc[0]
+commodities_df = commodities_performance(returns_df, risk_free_rate)
+top_commodity = commodities_df.sort_values(by="Sharpe Ratio", ascending=False).iloc[0]
+
 
 st.subheader("Sharpe ratio of individual commodities")
 st.write("")
 col1, col2 = st.columns([0.5, 0.5])
 with col1:
     st.write(f"The sharpe ratio is greater for {top_commodity["Commodity"]}")
-    st.dataframe(df)
+    st.dataframe(commodities_df)
 
 with col2:
-    df.set_index("Commodity", inplace=True)  # st.bar_chart needs index for x-axis
-    st.bar_chart(df["Sharpe Ratio"])
+    commodities_df.set_index("Commodity", inplace=True)  # st.bar_chart needs index for x-axis
+    st.bar_chart(commodities_df["Sharpe Ratio"])
 
 st.subheader("Specify Portfolio Weights for Each Commodity")
 st.write("")
@@ -73,9 +84,8 @@ weights = {}
 
 if optimize_weights:
     st.info("Weights will be optimized to maximize Sharpe Ratio.")
-    weights = optimizing_weights(returns_df)
-    # Placeholder: set equal weights (you'll replace this with actual optimization logic)
-    # weights = {commodity: 1 / len(commodities) for commodity in commodities}
+    weights = optimizing_weights(returns_df, risk_free_rate)
+
 
 else:
     st.info("Manually set weights for each selected commodity.")
@@ -101,7 +111,7 @@ else:
         normalized_weights = {k: v / 100 for k, v in weights.items()}
         weights = list(normalized_weights.values())
 
-portfolio = compute_portfolio(returns_df, risk_free_rate=0.0, weights=weights)
+portfolio = compute_portfolio(returns_df, risk_free_rate=risk_free_rate, weights=weights)
 
 asset_names = list(filtered_data.columns)
 
@@ -160,3 +170,29 @@ st.write("")
 st.subheader("Comparison of Portfolio vs Top Commodity")
 st.write("")
 st.bar_chart(df, stack=False)
+
+# Sample data
+data = {
+    'Asset': commodities_df.index.tolist() + ["Portfolio"],
+    'Return': commodities_df["Annual Return"].tolist() + [portfolio['annual_return']],
+    'Risk': commodities_df["Annual Volatility"].tolist() + [portfolio['annual_volatility']],
+    'Sharpe': commodities_df["Sharpe Ratio"].tolist() + [portfolio['sharpe_ratio']]
+}
+
+df = pd.DataFrame(data)
+
+chart = alt.Chart(df).mark_circle().encode(
+    x=alt.X('Risk', title='Volatility (Risk)'),
+    y=alt.Y('Return', title='Expected Return'),
+    size=alt.Size('Sharpe', title='Sharpe Ratio', scale=alt.Scale(range=[100, 1000])),  # adjust range as needed
+    color='Asset',
+    tooltip=['Asset', 'Return', 'Risk', 'Sharpe']
+).properties(
+    title='Risk vs Return (Bubble Size = Sharpe Ratio)',
+    width=700,
+    height=500
+)
+
+st.altair_chart(chart, use_container_width=True)
+
+

@@ -1,8 +1,8 @@
 import pandas as pd
 import numpy as np
 from scipy.optimize import minimize, LinearConstraint, Bounds
-trading_days = 252
 
+trading_days = 252
 
 
 def readData(file_path):
@@ -75,15 +75,14 @@ def compute_portfolio(returns_df, risk_free_rate, weights):
     }
 
 
-
-def commodities_performance(returns_df):
+def commodities_performance(returns_df, risk_free_rate):
     commodity_names = []
     sharpe_ratios = []
     annual_returns = []
     annual_vols = []
     for i in list(returns_df.columns):
         print(returns_df[i])
-        commodity = compute_portfolio(returns_df[[i]], risk_free_rate=0.0, weights=[1])
+        commodity = compute_portfolio(returns_df[[i]], risk_free_rate, weights=[1])
         commodity_names.append(i.replace("_return", ""))
         sharpe_ratios.append(commodity["sharpe_ratio"])
         annual_returns.append(commodity["annual_return"])
@@ -98,7 +97,7 @@ def commodities_performance(returns_df):
     return commodity_df
 
 
-def objective_function(weights, returns_df, risk_free_rate=0.0):
+def objective_function(weights, returns_df, risk_free_rate):
     # Compute portfolio daily returns
     portfolio_returns = (returns_df * weights).sum(axis=1)
 
@@ -111,7 +110,7 @@ def objective_function(weights, returns_df, risk_free_rate=0.0):
     return -sharpe  # We minimize negative Sharpe
 
 
-def optimizing_weights(returns_df, risk_free_rate=0.0):
+def optimizing_weights(returns_df, risk_free_rate):
     n_assets = len(returns_df.columns)
 
     # Initial guess: equal weights
