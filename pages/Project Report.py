@@ -9,7 +9,7 @@ st.set_page_config(page_title="Risk-Adjusted Commodities Portfolio", layout="wid
 st.title("📊 Risk-Adjusted Commodities Portfolio")
 st.markdown("**By Matthew Reynolds and Arjun Kunder**")
 
-st.markdown("🔗 [View Full Report PDF](https://github.com/MasterHacker2008/finance_dashboard/blob/main/ALT2_Commodities_Analysis_Report.pdf)")
+st.markdown("🔗 [View Full Report PDF](https://drive.google.com/file/d/1pTa1uZ9DidIG6QLmSJWjH7POgmYFek42/view?usp=sharing)")
 
 st.markdown(
     """
