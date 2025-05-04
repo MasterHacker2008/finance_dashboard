@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from scipy.optimize import minimize, LinearConstraint, Bounds
+from scipy.optimize import minimize
 
 trading_days = 252
 

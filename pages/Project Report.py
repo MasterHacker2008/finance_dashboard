@@ -1,87 +1,185 @@
 import streamlit as st
 
-st.set_page_config(page_title="Project Report")
-
-st.title("Project Report")
-
 # --- Project Write-up Section ---
-st.markdown("---")
-st.markdown("## 📘 Project Write-up")
+# -------------------------------------
+# Header
+# -------------------------------------
+st.set_page_config(page_title="Risk-Adjusted Commodities Portfolio", layout="wide")
 
-st.download_button(
-    label="Download CSV",
-    file_name="commodities_data.csv",
-    mime="text/csv",
-    data="./commodities_data.csv"
-)
-st.markdown("""
-### 🎯 Project Title
-**Commodity Portfolio Analysis: Testing the Impact of Diversification on Volatility and Risk-Adjusted Returns**
+st.title("📊 Risk-Adjusted Commodities Portfolio")
+st.markdown("**By Matthew Reynolds and Arjun Kunder**")
 
-### 🧠 Hypothesis
-A portfolio consisting of a mix of commodities (e.g. Crude Oil, Gold, and Silver) will have lower volatility and higher risk-adjusted returns compared to holding a single commodity.
+st.markdown("🔗 [View Full Report PDF](https://github.com/MasterHacker2008/finance_dashboard.git)")
 
----
+st.markdown(
+    """
+    <style>
+    .custom-text {
+        font-size: 14px;
+        line-height: 1;
+        color: grey;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
-### 🔍 Dataset & Analysis
+col1, col2 = st.columns(2)
 
-- **Source**: Historical daily commodity prices (e.g., Gold, Oil).
-- **Tools Used**: Python, Pandas, NumPy, Streamlit, Matplotlib, Altair, Scipy.
-- **Techniques**:
-  - Data cleaning (handling NaN values, sorting)
-  - Calculating daily returns, volatility, and Sharpe ratios
-  - Constructing weighted portfolios
-  - Comparing individual vs diversified performance
-  - Visualizing using charts and tables
+with col1:
+    st.markdown('<p class="custom-text">Candidate Names:</p>', unsafe_allow_html=True)
+    st.markdown('<p class="custom-text">Matthew Reynolds and Arjun Kunder</p>', unsafe_allow_html=True)
+    st.markdown('<p class="custom-text">Candidate Number: 2</p>', unsafe_allow_html=True)
+    st.markdown('<p class="custom-text">Class Group: ComScience</p>', unsafe_allow_html=True)
 
----
+with col2:
+    st.markdown('<p class="custom-text">Teacher Name: Mr McEneaney</p>', unsafe_allow_html=True)
+    st.markdown('<p class="custom-text">St. Josephs CBS</p>', unsafe_allow_html=True)
+    st.markdown('<p class="custom-text">Project Title: Risk Adjusted Commodities Portfolio</p>', unsafe_allow_html=True)
+    st.markdown('<p class="custom-text">Date Submitted: 01/05/2025</p>', unsafe_allow_html=True)
 
-### 🧮 Key Statistics
 
-- **Mean**, **Median**, **Mode**, and **Frequency** were calculated for each asset's return series.
-- You can view these under the **Basic Statistics** section above.
 
----
+st.divider()
 
-### ✅ Findings
 
-- The **optimized portfolio** achieved:
-  - **Higher Sharpe Ratio** than any individual commodity
-  - **Lower volatility** than more volatile single assets (like Oil)
-  - **Slightly better returns** than holding Gold alone
 
-This **supports the hypothesis** that diversification improves performance.
 
----
 
-### 🚫 Limitations
+# -------------------------------------
+# 1. Problem Statement
+# -------------------------------------
+with st.expander("📌 1. Problem Statement"):
+    st.markdown("""
+    The purpose of this investigation is to analyse a dataset to develop the most effective **risk-adjusted commodities portfolio**.
 
-- Focused on a specific time period — may not reflect all market conditions.
-- Ignores macroeconomic events (e.g. inflation, war, interest rates).
-- Assumes zero risk-free rate unless specified.
+    **Hypothesis**:  
+    A portfolio weighted for **Sharpe Ratio** will have a higher risk-adjusted return than any single commodity.
+    """)
 
----
+# -------------------------------------
+# 2. Dataset Description
+# -------------------------------------
+with st.expander("📁 2. Dataset Description"):
+    st.markdown("""
+    - Filename: `commodities_data.csv`  
+    - Source: Public finance dataset (kaggle.com)  
+    - Records: ~6,500  
+    - Fields: Name, Daily Prices over 25 years
+    """)
+    st.download_button(
+        label="Download CSV",
+        file_name="commodities_data.csv",
+        mime="text/csv",
+        data="./commodities_data.csv"
+    )
 
-### 👤 End Users
+# -------------------------------------
+# 3. Design and Planning
+# -------------------------------------
+with st.expander("🧪 3. Design and Planning"):
+    st.markdown("""
+    **Language:** Python  
+    **Libraries Used:**
+    - `pandas`: Data manipulation  
+    - `numpy`: Numerical calculations  
+    - `matplotlib`: Plotting  
+    - `streamlit`: Interface  
+    - `scipy.optimize`: Portfolio optimisation
+    """)
 
-- Students studying finance or statistics
-- Individual investors exploring risk-adjusted returns
-- Teachers using the dashboard for demonstration
+    st.markdown("**Data Cleaning:** Missing values filled using average of two surrounding values.")
 
----
+# Section 4: Implementation
+st.subheader('4. Implementation')
 
-### 🧰 Roles
-
-- **Developer**: Programmed the data analysis and app interface
-- **Researcher**: Formulated hypothesis and sourced data
-- **Designer**: Designed charts and layout
-- **Presenter**: Summarized findings and built dashboard experience
-
----
-
-### ✅ Conclusion
-
-The analysis clearly shows that combining commodities into a portfolio leads to better risk-adjusted returns and reduced volatility, **proving the hypothesis**.
-
-Thank you for exploring this dashboard!
+st.write("""
+The Python program performs the following actions:
+1. Reads the .csv file.
+2. Cleans the data.
+3. Calculates:
+    - Daily mean returns
+    - Daily portfolio return
+    - Annualized return
+    - Covariance matrix of daily returns
+    - Daily portfolio volatility
+    - Annualized volatility
+    - Sharpe ratio for each commodity
+4. Optimizes the portfolio based on the Sharpe ratio of all the commodities.
+5. Compares the portfolio to gold (our top commodity).
+6. Visualizes the mean values in a bar chart.
 """)
+
+# -------------------------------------
+# 5. Sharpe Ratio and Optimisation
+# -------------------------------------
+st.subheader("5. Sharpe Ratio & Optimisation Logic")
+
+st.markdown("**Sharpe Ratio Formula**")
+st.latex(r"\text{Sharpe Ratio} = \frac{R_p - R_f}{\sigma_p}")
+
+st.markdown("""
+Where:  
+- **Rp** = Annual return of the portfolio  
+- **Rf** = Risk-free rate (e.g., 0.02)  
+- **σp** = Portfolio volatility (standard deviation)
+""")
+
+st.markdown(r"""
+**Optimisation Logic using `scipy.optimize.minimize`:**
+- **Goal**: Maximise Sharpe Ratio (i.e., minimise its negative)
+- **Constraints**: Weights sum to 1
+- **Bounds**: Each weight between 0 and 1
+""")
+# -------------------------------------
+# 5. Results
+# -------------------------------------
+with st.expander("📊 5. Analysis of Results"):
+    st.markdown("""
+    - **Natural Gas** had the highest raw return  
+    - **Oil** had the highest volatility  
+    - **Gold** had the best Sharpe Ratio  
+    - **Optimised Portfolio**: Balanced returns with lower risk
+
+    Graphs include:
+    - Annual return line chart
+    - Sharpe Ratio bar chart
+    - Portfolio vs Commodity comparison
+    - Pie chart of weights
+    """)
+
+# -------------------------------------
+# 6. Evaluation
+# -------------------------------------
+with st.expander("🧠 6. Evaluation and Reflection"):
+    st.markdown("""
+    **Strengths:**
+    - Accurate metrics
+    - Effective use of optimisation
+    - Interactive dashboard for easier interpretation
+
+    **Limitations:**
+    - Ignores macroeconomic factors (inflation, war)
+    - Historical data may not reflect future conditions
+
+    **Future Improvements:**
+    - Include asset correlations
+    - Use machine learning to detect regime changes
+    - Add portfolio rebalancing logic
+    """)
+
+# -------------------------------------
+# 7. Sources
+# -------------------------------------
+with st.expander("📚 7. References and Sources"):
+    st.markdown("""
+- [pandas Documentation](https://pandas.pydata.org/docs/)
+- [NumPy Documentation](https://numpy.org/doc/)
+- [Matplotlib Documentation](https://matplotlib.org/stable/contents.html)
+- [SciPy Minimize Docs](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html)
+- [Streamlit Docs](https://docs.streamlit.io/)
+    """)
+
+# -------------------------------------
+# Footer
+# -------------------------------------
+st.markdown("---")
+st.markdown("© 2025 Matthew Reynolds & Arjun Kunder")
